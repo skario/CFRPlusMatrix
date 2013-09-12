@@ -1,7 +1,7 @@
 CFRPlusMatrix
 =============
 
-Solves matrix games with uniform random [-1, 1] distribution using Fictitious play, Counterfactual Regret Minimization
+Solves matrix games with uniform random [-1, 1] distribution payoffs using Fictitious play, Counterfactual Regret Minimization
 and CFR+.
 
 Building:
