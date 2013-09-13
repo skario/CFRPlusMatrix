@@ -14,10 +14,10 @@ public:
 	{
 		this->size = size;
 		iterationCount = 0;
+		payoffs.resize(size * size);
 
 		for (int p = 0; p < 2; p++)
 		{
-			payoffs.resize(size * size);
 			strategy[p].resize(size);
 			cfr[p].resize(size);
 		}
@@ -60,6 +60,16 @@ public:
 		iterationCount++;
 		CFRPlus(0);
 		CFRPlus(1);
+	}
+
+	void Iteration(int algorithm)
+	{
+		switch (algorithm)
+		{
+		case 0: FictitiousPlay(); break;
+		case 1: CFR(); break;
+		default: CFRPlus(); break;
+		}
 	}
 
 private:
@@ -222,6 +232,43 @@ private:
 
 };
 
+int Run(int algorithm, int size, double epsilon, mt19937 &rng)
+{
+	MatrixGame m(size, rng);
+	double e;
+	do
+	{
+		m.Iteration(algorithm);
+		e = m.GetExploitability();
+	} while (e > epsilon);
+
+	return m.GetIterationCount();
+}
+
+void RunMany(int n, int algorithm, int size, double epsilon)
+{
+	random_device rd;
+	mt19937 rng;
+	rng.seed(rd());
+
+	double sum = 0;
+	int min = numeric_limits<int>::max();
+	int max = numeric_limits<int>::min();
+
+	for (int i = 0; i < n; i++)
+	{
+		printf("\r%d/%d", i + 1, n);
+		fflush(stdout);
+		auto nit = Run(algorithm, size, epsilon, rng);
+		min = std::min(min, nit);
+		max = std::max(max, nit);
+		sum += nit;
+	}
+
+	printf("\rmin %d | max %d | avg %.1f\n", min, max, sum / n);
+
+}
+
 char const *algorithmNames[] = { "Fictitious play", "CFR", "CFR+" };
 
 int main(int argc, char *argv[])
@@ -229,11 +276,19 @@ int main(int argc, char *argv[])
 	CommandLine::Integer algorithm("a", false, "Algorithm (0 = Fictitious play, 1 = CFR, 2 = CFR+)", 0, 2, 2);
 	CommandLine::Integer size("s", false, "Matrix size", 2, 100000, 1000);
 	CommandLine::Real epsilon("e", false, "Epsilon", 0.000000000001, 1, 0.0001);
+	CommandLine::Integer nruns("n", false, "Number of times to run", 1, 100000, 1);
 	CommandLine::Parser::Parse(argc, argv);
 
 	printf("Algorithm: %s\n", algorithmNames[algorithm]);
 	printf("Matrix size: %d\n", (int)size);
 	printf("Epsilon: %f\n", (double)epsilon);
+	printf("N: %d\n", (int)nruns);
+
+	if (nruns > 1)
+	{
+		RunMany(nruns, algorithm, size, epsilon);
+		return 0;
+	}
 
 	printf("init\n");
 
@@ -251,12 +306,7 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		switch (algorithm)
-		{
-		case 0: m.FictitiousPlay(); break;
-		case 1: m.CFR(); break;
-		default: m.CFRPlus(); break;
-		}
+		m.Iteration(algorithm);
 
 		e = m.GetExploitability();
 
