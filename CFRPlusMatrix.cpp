@@ -7,6 +7,9 @@
 using namespace std;
 using namespace std::chrono;
 
+const int AlgorithmCount = 3;
+char const *algorithmNames[] = { "Fictitious play", "CFR", "CFR+" };
+
 class MatrixGame
 {
 public:
@@ -265,11 +268,9 @@ void RunMany(int n, int algorithm, int size, double epsilon)
 		sum += nit;
 	}
 
-	printf("\rmin %d | max %d | avg %.1f\n", min, max, sum / n);
+	printf("\r%-16s | min %-4d | max %-6d | avg %.1f\n", algorithmNames[algorithm], min, max, sum / n);
 
 }
-
-char const *algorithmNames[] = { "Fictitious play", "CFR", "CFR+" };
 
 int main(int argc, char *argv[])
 {
@@ -277,16 +278,26 @@ int main(int argc, char *argv[])
 	CommandLine::Integer size("s", false, "Matrix size", 2, 100000, 1000);
 	CommandLine::Real epsilon("e", false, "Epsilon", 0.000000000001, 1, 0.0001);
 	CommandLine::Integer nruns("n", false, "Number of times to run", 1, 100000, 1);
+	CommandLine::Boolean all("all", false, "Run all algorithms (used together with -n)");
 	CommandLine::Parser::Parse(argc, argv);
 
-	printf("Algorithm: %s\n", algorithmNames[algorithm]);
-	printf("Matrix size: %d\n", (int)size);
+	if (!all) printf("Algorithm: %s\n", algorithmNames[algorithm]);
+	printf("Matrix size: %dx%d\n", (int)size, (int)size);
 	printf("Epsilon: %f\n", (double)epsilon);
 	printf("N: %d\n", (int)nruns);
 
 	if (nruns > 1)
 	{
-		RunMany(nruns, algorithm, size, epsilon);
+		if (all)
+		{
+			for (int alg = 0; alg < AlgorithmCount; alg++)
+				RunMany(nruns, alg, size, epsilon);
+		}
+		else
+		{
+			RunMany(nruns, algorithm, size, epsilon);
+		}
+			
 		return 0;
 	}
 
