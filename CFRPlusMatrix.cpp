@@ -2,6 +2,7 @@
 #include <chrono>
 #include <random>
 #include <vector>
+#include <assert.h>
 #include "cmdline.h"
 
 using namespace std;
@@ -39,6 +40,13 @@ public:
 				payoffs[a * size + b] = double_rnd(rng);
 			}
 		}
+
+		/* rock-paper-scissors
+		assert(size == 3);
+		payoffs[0 * size + 0] = 0; payoffs[0 * size + 1] = 1; payoffs[0 * size + 2] = -1;
+		payoffs[1 * size + 0] = -1; payoffs[1 * size + 1] = 0; payoffs[1 * size + 2] = 1;
+		payoffs[2 * size + 0] = 1; payoffs[2 * size + 1] = -1; payoffs[2 * size + 2] = 0;
+		*/
 	}
 
 	int GetIterationCount() const { return iterationCount; }
@@ -72,6 +80,32 @@ public:
 		case 0: FictitiousPlay(); break;
 		case 1: CFR(); break;
 		default: CFRPlus(); break;
+		}
+	}
+
+	void Dump()
+	{
+		printf("Payoffs:\n");
+
+		for (int a = 0; a < size; a++)
+		{
+			for (int b = 0; b < size; b++)
+			{
+				printf("%5.2f ", payoffs[a * size + b]);
+			}
+			printf("\n");
+		}
+
+		for (int p = 0; p < 2; p++)
+		{
+			auto ns = GetNormalizedStrategy(p);
+
+			printf(p == 0 ? "Row strategy:    " : "Column strategy: ");
+			
+			for (int i = 0; i < size; i++)
+				printf("%4.2f ", ns[i]);
+
+			printf("\n");
 		}
 	}
 
@@ -279,6 +313,7 @@ int main(int argc, char *argv[])
 	CommandLine::Real epsilon("e", false, "Epsilon", 0.000000000001, 1, 0.0001);
 	CommandLine::Integer nruns("n", false, "Number of times to run", 1, 100000, 1);
 	CommandLine::Boolean all("all", false, "Run all algorithms (used together with -n)");
+	CommandLine::Boolean dump("dump", false, "Print payoffs and strategies");
 	CommandLine::Parser::Parse(argc, argv);
 
 	if (!all) printf("Algorithm: %s\n", algorithmNames[algorithm]);
@@ -325,6 +360,8 @@ int main(int argc, char *argv[])
 
 		printf("i=%d t=%.2f e=%.6f\n", m.GetIterationCount(), t / 1000.0, e);
 	} while (e > epsilon);
+
+	if (dump) m.Dump();
 
 	return 0;
 }
