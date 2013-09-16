@@ -260,7 +260,7 @@ private:
 
 		switch(wmode)
 		{
-		case 0: w = 1; break;
+		case 0: w = iterationCount > delay ? 1 : 0; break;
 		case 1: w = iterationCount > delay ? (iterationCount - delay) : 0; break;
 		default: w = iterationCount > delay ? (iterationCount - delay) * (iterationCount - delay) : 0; break;
 		}
