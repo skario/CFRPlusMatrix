@@ -1,7 +1,7 @@
 CFRPlusMatrix
 =============
 
-Solves matrix games with random uniformly distributed payoffs [-1, 1] using Fictitious play, Counterfactual Regret Minimization
+Solves zero-sum matrix games with random uniformly distributed payoffs [-1, 1] using Fictitious play, Counterfactual Regret Minimization
 and CFR+.
 
 Building:
@@ -33,6 +33,6 @@ Compare algorithms. It will output something like this:
     CFR              | min 3483 | max 49694  | avg 17850.9
     CFR+             | min 127  | max 3657   | avg 968.6
 
-
+See http://jeskola.net/cfr/ for more stuff.
 
 

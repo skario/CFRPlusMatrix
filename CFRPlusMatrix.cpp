@@ -10,6 +10,8 @@ using namespace std::chrono;
 
 const int AlgorithmCount = 3;
 char const *algorithmNames[] = { "Fictitious play", "CFR", "CFR+" };
+char const *wmodeNames[] = { "constant", "linear", "quadratic" };
+
 
 class MatrixGame
 {
@@ -66,20 +68,20 @@ public:
 		CFR(1);
 	}
 
-	void CFRPlus(int delay)
+	void CFRPlus(int delay, int wmode)
 	{
 		iterationCount++;
-		CFRPlus(0, delay);
-		CFRPlus(1, delay);
+		CFRPlus(0, delay, wmode);
+		CFRPlus(1, delay, wmode);
 	}
 
-	void Iteration(int algorithm, int delay)
+	void Iteration(int algorithm, int delay, int wmode)
 	{
 		switch (algorithm)
 		{
 		case 0: FictitiousPlay(); break;
 		case 1: CFR(); break;
-		default: CFRPlus(delay); break;
+		default: CFRPlus(delay, wmode); break;
 		}
 	}
 
@@ -233,7 +235,7 @@ private:
 
 	}
 
-	void CFRPlus(int player, int delay)
+	void CFRPlus(int player, int delay, int wmode)
 	{
 		vector<double> cfu(size);
 		double ev = 0;
@@ -254,7 +256,14 @@ private:
 		for (int a = 0; a < size; a++)
 			cfr[player][a] = std::max(0.0, cfr[player][a] + cfu[a] - ev);
 
-		double w = iterationCount > delay ? (iterationCount - delay) * (iterationCount - delay) : 0;
+		double w;
+
+		switch(wmode)
+		{
+		case 0: w = 1; break;
+		case 1: w = iterationCount > delay ? (iterationCount - delay) : 0; break;
+		default: w = iterationCount > delay ? (iterationCount - delay) * (iterationCount - delay) : 0; break;
+		}
 
 		for (int a = 0; a < size; a++)
 			strategy[player][a] += sp[a] * w;
@@ -271,20 +280,20 @@ private:
 
 };
 
-int Run(int algorithm, int delay, int size, double epsilon, mt19937 &rng)
+int Run(int algorithm, int delay, int wmode, int size, double epsilon, mt19937 &rng)
 {
 	MatrixGame m(size, rng);
 	double e;
 	do
 	{
-		m.Iteration(algorithm, delay);
+		m.Iteration(algorithm, delay, wmode);
 		e = m.GetExploitability();
 	} while (e > epsilon);
 
 	return m.GetIterationCount();
 }
 
-void RunMany(int n, int algorithm, int delay, int size, double epsilon)
+void RunMany(int n, int algorithm, int delay, int wmode, int size, double epsilon)
 {
 	random_device rd;
 	mt19937 rng;
@@ -298,7 +307,7 @@ void RunMany(int n, int algorithm, int delay, int size, double epsilon)
 	{
 		printf("\r%d/%d", i + 1, n);
 		fflush(stdout);
-		auto nit = Run(algorithm, delay, size, epsilon, rng);
+		auto nit = Run(algorithm, delay, wmode, size, epsilon, rng);
 		min = std::min(min, nit);
 		max = std::max(max, nit);
 		sum += nit;
@@ -317,10 +326,12 @@ int main(int argc, char *argv[])
 	CommandLine::Boolean all("all", false, "Run all algorithms (used together with -n)");
 	CommandLine::Boolean dump("dump", false, "Print payoffs and strategies");
 	CommandLine::Integer delay("delay", false, "Averaging delay in iterations", 0, 100000, 0);
+	CommandLine::Integer wmode("w", false, "Weighting mode (0 = constant, 1 = linear, 2 = quadratic)", 0, 2, 1);
 	CommandLine::Parser::Parse(argc, argv);
 
 	if (!all) printf("Algorithm: %s\n", algorithmNames[algorithm]);
 	printf("Averaging delay (CFR+): %d\n", (int)delay);
+	printf("Weighting mode (CFR+): %s\n", wmodeNames[(int)wmode]);
 	printf("Matrix size: %dx%d\n", (int)size, (int)size);
 	printf("Epsilon: %f\n", (double)epsilon);
 	printf("N: %d\n", (int)nruns);
@@ -330,11 +341,11 @@ int main(int argc, char *argv[])
 		if (all)
 		{
 			for (int alg = 0; alg < AlgorithmCount; alg++)
-				RunMany(nruns, alg, delay, size, epsilon);
+				RunMany(nruns, alg, delay, wmode, size, epsilon);
 		}
 		else
 		{
-			RunMany(nruns, algorithm, delay, size, epsilon);
+			RunMany(nruns, algorithm, delay, wmode, size, epsilon);
 		}
 			
 		return 0;
@@ -356,7 +367,7 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		m.Iteration(algorithm, delay);
+		m.Iteration(algorithm, delay, wmode);
 
 		e = m.GetExploitability();
 
